@@ -1,0 +1,20 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="admin-form-page">
+    <div class="directory-empty-state">
+        <h2>Something went wrong</h2>
+        <p>An unexpected error occurred while processing your request.</p>
+
+        @if (Model.ShowRequestId)
+        {
+            <p class="error-request-id">
+                Request ID: <strong>@Model.RequestId</strong>
+            </p>
+        }
+
+        <a asp-controller="Home" asp-action="Index">Back to Home</a>
+    </div>
+</div>

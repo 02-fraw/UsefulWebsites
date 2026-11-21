@@ -1,0 +1,27 @@
+## Visual Studio / .NET
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## User secrets & local overrides
+appsettings.Local.json
+appsettings.*.Local.json
+.env
+.env.*
+
+## OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

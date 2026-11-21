@@ -1,0 +1,291 @@
+@model UsefulWebsites.ViewModels.AdminIndexViewModel
+
+@functions {
+    private static string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "WS";
+        }
+
+        string[] words = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Concat(words.Take(2).Select(word => char.ToUpperInvariant(word[0])));
+    }
+}
+
+<div class="admin-page">
+    <header class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Content Management</p>
+            <h1>Management Panel</h1>
+            <p>Add, edit, or delete curated websites and categories.</p>
+        </div>
+
+        <div class="admin-header-actions">
+            <a class="admin-button admin-button-pdf"
+               asp-controller="Admin"
+               asp-action="ExportWebsitesPdf">
+                <span aria-hidden="true">↓</span>
+                Export All as PDF
+            </a>
+
+            <a class="admin-button admin-button-primary"
+               asp-controller="Admin"
+               asp-action="Create">
+                <span aria-hidden="true">+</span>
+                Add New Website
+            </a>
+        </div>
+    </header>
+
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    @if (TempData["WarningMessage"] is string warningMessage)
+    {
+        <div class="alert alert-warning">@warningMessage</div>
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-error">@errorMessage</div>
+    }
+
+    <section class="admin-statistics">
+        <article>
+            <span>Total Websites</span>
+            <strong>@Model.TotalWebsiteCount</strong>
+        </article>
+
+        <article>
+            <span>Total Categories</span>
+            <strong>@Model.TotalCategoryCount</strong>
+        </article>
+
+        <article>
+            <span>Listed</span>
+            <strong id="adminListedCount">@Model.Websites.Count</strong>
+        </article>
+    </section>
+
+    <section class="admin-toolbar">
+        <form class="admin-search-form"
+              id="adminSearchForm"
+              asp-controller="Admin"
+              asp-action="Index"
+              method="get">
+
+            @if (Model.SelectedCategoryId.HasValue)
+            {
+                <input type="hidden" name="categoryId" value="@Model.SelectedCategoryId" />
+            }
+
+            <div class="admin-search-input-wrap">
+                <label class="visually-hidden" for="adminSearchInput">Search websites</label>
+
+                <input id="adminSearchInput"
+                       type="search"
+                       name="search"
+                       value="@Model.SearchTerm"
+                       maxlength="100"
+                       autocomplete="off"
+                       placeholder="Search website, URL, or category..." />
+
+                <button class="search-clear-btn"
+                        id="adminSearchClear"
+                        type="button"
+                        aria-label="Clear search"
+                        title="Clear search"
+                        @(string.IsNullOrWhiteSpace(Model.SearchTerm) ? "hidden" : null)>
+                    &times;
+                </button>
+            </div>
+
+            <button class="admin-search-submit" type="submit">
+                Search
+            </button>
+        </form>
+    </section>
+
+    <nav class="admin-category-filters" aria-label="Management categories">
+        <a class="@(Model.SelectedCategoryId is null ? "is-active" : string.Empty)"
+           asp-controller="Admin"
+           asp-action="Index"
+           asp-route-search="@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? null : Model.SearchTerm)">
+            All
+            <span>@Model.TotalWebsiteCount</span>
+        </a>
+
+        @foreach (var category in Model.Categories)
+        {
+            <a class="@(Model.SelectedCategoryId == category.Id ? "is-active" : string.Empty)"
+               asp-controller="Admin"
+               asp-action="Index"
+               asp-route-categoryId="@category.Id"
+               asp-route-search="@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? null : Model.SearchTerm)">
+                @category.Name
+                <span>@category.WebsiteCount</span>
+            </a>
+        }
+    </nav>
+
+    <div id="adminResultsContainer">
+        @if (Model.Websites.Count == 0)
+        {
+            <div class="admin-empty-state">
+                <h2>@(Model.TotalWebsiteCount == 0 ? "No websites yet" : "No matching websites found")</h2>
+                <p>
+                    @(Model.TotalWebsiteCount == 0
+                        ? "Start building your archive by adding your first website."
+                        : "Try adjusting your search query or category filter.")
+                </p>
+
+                <a class="admin-button admin-button-primary"
+                   asp-controller="Admin"
+                   asp-action="Create">
+                    Add New Website
+                </a>
+            </div>
+        }
+        else
+        {
+            <form asp-controller="Admin"
+                  asp-action="BulkDelete"
+                  method="post"
+                  id="bulkDeleteForm">
+
+                <div class="admin-list-actions">
+                    <label class="admin-select-all">
+                        <input type="checkbox" id="selectAllWebsites" />
+                        <span>Select all</span>
+                    </label>
+
+                    <button class="admin-button admin-button-danger"
+                            type="submit"
+                            data-requires-selection="true"
+                            data-confirm-message="Selected websites will be permanently deleted. Continue?">
+                        Delete Selected
+                    </button>
+                </div>
+
+                <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th class="admin-checkbox-column">Select</th>
+                                <th>Website</th>
+                                <th>Category</th>
+                                <th>Added</th>
+                                <th class="admin-actions-column">Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var website in Model.Websites)
+                            {
+                                string initials = GetInitials(website.Name);
+
+                                <tr>
+                                    <td class="admin-checkbox-column">
+                                        <input class="website-checkbox"
+                                               type="checkbox"
+                                               name="selectedIds"
+                                               value="@website.Id"
+                                               aria-label="Select @website.Name" />
+                                    </td>
+
+                                    <td>
+                                        <div class="admin-website-cell">
+                                            <div class="admin-website-logo" data-logo-wrapper>
+                                                @if (!string.IsNullOrWhiteSpace(website.LogoUrl))
+                                                {
+                                                    <img src="@website.LogoUrl"
+                                                         alt=""
+                                                         loading="lazy"
+                                                         referrerpolicy="no-referrer"
+                                                         data-site-logo />
+                                                }
+
+                                                <span class="@(!string.IsNullOrWhiteSpace(website.LogoUrl) ? "is-hidden" : string.Empty)"
+                                                      data-logo-fallback>
+                                                    @initials
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <strong>@website.Name</strong>
+
+                                                <a href="@website.Url"
+                                                   target="_blank"
+                                                   rel="noopener noreferrer">
+                                                    @website.Url
+                                                </a>
+
+                                                <p>@website.Description</p>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>@website.CategoryName</td>
+
+                                    <td>
+                                        <time datetime="@website.CreatedAtUtc.ToString("O")">
+                                            @website.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")
+                                        </time>
+                                    </td>
+
+                                    <td class="admin-actions-column">
+                                        <a class="admin-action-link"
+                                           asp-controller="Admin"
+                                           asp-action="Edit"
+                                           asp-route-id="@website.Id">
+                                            Edit
+                                        </a>
+
+                                        <button class="admin-action-delete"
+                                                type="submit"
+                                                formaction="@Url.Action("Delete", "Admin", new { id = website.Id })"
+                                                formmethod="post"
+                                                data-confirm-message="@($"Permanently delete {website.Name}?")">
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        }
+    </div>
+
+    <section class="admin-danger-zone">
+        <div>
+            <h2>Delete all websites</h2>
+            <p>
+                This action cannot be undone. Categories are preserved; only website records are deleted.
+            </p>
+        </div>
+
+        <form asp-controller="Admin" asp-action="DeleteAll" method="post">
+            <label for="deleteAllConfirmation">
+                Type <strong>DELETE ALL</strong> to confirm:
+            </label>
+
+            <div>
+                <input id="deleteAllConfirmation"
+                       type="text"
+                       name="confirmation"
+                       autocomplete="off" />
+
+                <button class="admin-button admin-button-danger"
+                        type="submit"
+                        data-confirm-message="All website records will be permanently deleted. Are you sure?">
+                    Delete All
+                </button>
+            </div>
+        </form>
+    </section>
+</div>

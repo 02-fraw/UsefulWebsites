@@ -1,0 +1,246 @@
+@model UsefulWebsites.ViewModels.HomeIndexViewModel
+
+@functions {
+    private static string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "WS";
+        }
+
+        string[] words = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Concat(words.Take(2).Select(word => char.ToUpperInvariant(word[0])));
+    }
+}
+
+@{
+    var selectedCategory = Model.Categories
+        .FirstOrDefault(category => category.Id == Model.SelectedCategoryId);
+
+    string pageHeading = selectedCategory?.Name ?? "Resource Vault";
+}
+
+<div class="directory-layout">
+    <aside class="category-sidebar">
+        <div class="category-sidebar-heading">
+            <span>Categories</span>
+            <span class="category-total">@Model.Categories.Count</span>
+        </div>
+
+        <nav class="category-navigation" aria-label="Website categories">
+            <a class="category-navigation-link @(Model.SelectedCategoryId is null ? "is-active" : string.Empty)"
+               asp-controller="Home"
+               asp-action="Index"
+               asp-route-search="@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? null : Model.SearchTerm)">
+                <span class="category-navigation-icon">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"
+                              stroke="currentColor" stroke-width="1.7" />
+                    </svg>
+                </span>
+                <span class="category-navigation-name">All Websites</span>
+                <span class="category-navigation-count">@Model.TotalWebsiteCount</span>
+            </a>
+
+            @foreach (var category in Model.Categories)
+            {
+                <a class="category-navigation-link @(Model.SelectedCategoryId == category.Id ? "is-active" : string.Empty)"
+                   asp-controller="Home"
+                   asp-action="Index"
+                   asp-route-categoryId="@category.Id"
+                   asp-route-search="@(string.IsNullOrWhiteSpace(Model.SearchTerm) ? null : Model.SearchTerm)">
+                    <span class="category-navigation-icon">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H10l2 2h5.5A2.5 2.5 0 0 1 20 9.5v7A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"
+                                  stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                        </svg>
+                    </span>
+                    <span class="category-navigation-name">@category.Name</span>
+                    <span class="category-navigation-count">@category.WebsiteCount</span>
+                </a>
+            }
+        </nav>
+
+        <div class="category-sidebar-bottom">
+            <a class="sidebar-admin-link" asp-controller="Admin" asp-action="Index">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3 4 7v5c0 5 3.4 8 8 9 4.6-1 8-4 8-9V7l-8-4Z"
+                          stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                    <path d="M9 12h6M12 9v6"
+                          stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg>
+                <span>Management Panel</span>
+            </a>
+        </div>
+    </aside>
+
+    <section class="directory-main">
+        <form class="directory-search"
+              asp-controller="Home"
+              asp-action="Index"
+              method="get">
+
+            @if (Model.SelectedCategoryId.HasValue)
+            {
+                <input type="hidden" name="categoryId" value="@Model.SelectedCategoryId" />
+            }
+
+            <span class="directory-search-icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8" />
+                    <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+            </span>
+
+            <label class="visually-hidden" for="searchInput">Search websites</label>
+
+            <input id="searchInput"
+                   type="search"
+                   name="search"
+                   value="@Model.SearchTerm"
+                   maxlength="100"
+                   autocomplete="off"
+                   placeholder="Search website name..." />
+
+            <button class="search-clear-btn"
+                    id="homeSearchClear"
+                    type="button"
+                    aria-label="Clear search"
+                    title="Clear search"
+                    @(string.IsNullOrWhiteSpace(Model.SearchTerm) ? "hidden" : null)>
+                &times;
+            </button>
+
+            <button class="directory-search-submit" type="submit">
+                Search
+            </button>
+        </form>
+
+        <header class="directory-header">
+            <div>
+                <p class="directory-eyebrow">Curated Tool Archive</p>
+                <h1>@pageHeading</h1>
+                <p class="directory-subtitle">
+                    Websites are ordered from newest to oldest.
+                </p>
+            </div>
+
+            <div class="directory-statistics">
+                <div class="directory-statistic">
+                    <strong>@Model.TotalWebsiteCount</strong>
+                    <span>Total websites</span>
+                </div>
+
+                <div class="directory-statistic">
+                    <strong>@Model.Categories.Count</strong>
+                    <span>Categories</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="directory-results-bar">
+            <span>
+                <strong>@Model.Websites.Count</strong>
+                @(Model.Websites.Count == 1 ? "website listed" : "websites listed")
+            </span>
+
+            <span class="directory-sort-label">
+                Newest first
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </span>
+        </div>
+
+        @if (Model.Websites.Count == 0)
+        {
+            <div class="directory-empty-state">
+                <span class="directory-empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7" />
+                        <path d="m16.5 16.5 4 4M8 11h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                    </svg>
+                </span>
+
+                <h2>No websites found</h2>
+                <p>Try adjusting your search query or category filter.</p>
+
+                <a asp-controller="Home" asp-action="Index">Show all websites</a>
+            </div>
+        }
+        else
+        {
+            <div class="tool-grid">
+                @foreach (var website in Model.Websites)
+                {
+                    string initials = GetInitials(website.Name);
+
+                    <article class="tool-card">
+                        <div class="tool-logo" data-logo-wrapper>
+                            @if (!string.IsNullOrWhiteSpace(website.LogoUrl))
+                            {
+                                <img src="@website.LogoUrl"
+                                     alt=""
+                                     loading="lazy"
+                                     referrerpolicy="no-referrer"
+                                     data-site-logo />
+                            }
+
+                            <span class="tool-logo-fallback @(!string.IsNullOrWhiteSpace(website.LogoUrl) ? "is-hidden" : string.Empty)"
+                                  data-logo-fallback>
+                                @initials
+                            </span>
+                        </div>
+
+                        <div class="tool-card-content">
+                            <div class="tool-card-heading">
+                                <div>
+                                    <h2>@website.Name</h2>
+
+                                    <a class="tool-category"
+                                       asp-controller="Home"
+                                       asp-action="Index"
+                                       asp-route-categoryId="@website.CategoryId">
+                                        @website.CategoryName
+                                    </a>
+                                </div>
+                            </div>
+
+                            <p class="tool-description" data-description>
+                                @website.Description
+                            </p>
+
+                            @if (website.Description.Length > 180)
+                            {
+                                <button class="description-toggle"
+                                        type="button"
+                                        data-description-toggle>
+                                    Show more
+                                </button>
+                            }
+
+                            <div class="tool-card-footer">
+                                <time datetime="@website.CreatedAtUtc.ToString("O")">
+                                    @website.CreatedAtUtc.ToString("yyyy-MM-dd")
+                                </time>
+
+                                <a class="tool-open-link"
+                                   href="@website.Url"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Visit Site
+                                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M14 5h5v5M19 5l-8 8"
+                                              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                                        <path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"
+                                              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</div>

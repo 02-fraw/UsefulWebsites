@@ -1,0 +1,40 @@
+@model UsefulWebsites.ViewModels.WebsiteFormViewModel
+
+<div class="admin-form-page">
+    <header class="admin-form-page-header">
+        <div>
+            <p class="admin-eyebrow">Edit Entry</p>
+            <h1>Edit Website</h1>
+            <p>Update the website details or change its category.</p>
+        </div>
+
+        <a asp-controller="Admin" asp-action="Index">Back to List</a>
+    </header>
+
+    <form class="admin-form-card"
+          asp-controller="Admin"
+          asp-action="Edit"
+          asp-route-id="@Model.Id"
+          method="post">
+
+        <input asp-for="Id" type="hidden" />
+
+        <partial name="_WebsiteForm" model="Model" />
+
+        <div class="admin-form-actions">
+            <a class="admin-button admin-button-secondary"
+               asp-controller="Admin"
+               asp-action="Index">
+                Cancel
+            </a>
+
+            <button class="admin-button admin-button-primary" type="submit">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
